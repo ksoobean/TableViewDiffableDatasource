@@ -33,6 +33,8 @@ class ViewController: UIViewController {
     private let cellReuseIdentifier = "cell"
     private lazy var dataSource = makeDataSource()
     
+    var contactList :ContactList?
+    
     override func viewDidLoad() {
         super.viewDidLoad()
 
@@ -49,8 +51,20 @@ class ViewController: UIViewController {
         tableView.delegate = self
         
         loadData()
-    }
-
+        
+        let bear = ["B","E","A","R"]
+        let bird = ["B","I","R","D"]
+        
+        let diff = bird.difference(from: bear)
+        diff.forEach {
+            print($0)
+        }
+        
+        let bearToBird = bear.applying(diff)
+        print(bearToBird!)
+        
+        }
+    
     
     /// cell Provider 클로저로 dequeueReusableCell 구성 가능
     func makeDataSource() -> UITableViewDiffableDataSource<Section, Contact> {
@@ -77,9 +91,15 @@ class ViewController: UIViewController {
         )
     }
     
-    func update(with list: ContactList, animate: Bool = true) {
+    func update(with list: ContactList?, animate: Bool = true) {
         // NSDiffableDataSourceSnapshot : 데이터의 현재 상태를 표현함. tableview reloading 데이터 관리
         var snapshot = NSDiffableDataSourceSnapshot<Section, Contact>()
+        
+        guard list != nil else {
+            dataSource.apply(snapshot, animatingDifferences: animate)
+            return
+        }
+        
         // 각 섹션을 추가
         snapshot.appendSections(Section.allCases)
 //         allCases로 섹션을 추가하지 않고 각각 섹션으로 추가할 경우, 모든 섹션이 추가되지 않으면 에러
@@ -87,11 +107,13 @@ class ViewController: UIViewController {
 //        snapshot.appendSections([.family])
 //        snapshot.appendSections([.coworkers])
 //        snapshot.appendSections([.friends])
+        
+        
 
         // 섹션에 데이터 추가
-        snapshot.appendItems(list.friends, toSection: .friends)
-        snapshot.appendItems(list.family, toSection: .family)
-        snapshot.appendItems(list.coworkers, toSection: .coworkers)
+        snapshot.appendItems(list!.friends, toSection: .friends)
+        snapshot.appendItems(list!.family, toSection: .family)
+        snapshot.appendItems(list!.coworkers, toSection: .coworkers)
         
         // datasource에 snapshot 붙임
         dataSource.apply(snapshot, animatingDifferences: animate)
@@ -114,7 +136,7 @@ class ViewController: UIViewController {
             Contact(name: "Tim", email: "mason@something.com")
         ]
 
-        let contactList = ContactList(friends: friends, family: family, coworkers: coworkers)
+        contactList = ContactList(friends: friends, family: family, coworkers: coworkers)
         update(with: contactList, animate: true)
     }
 }
@@ -141,6 +163,11 @@ extension ViewController : UITableViewDelegate {
             var currentSnapshot = self.dataSource.snapshot()
             currentSnapshot.deleteItems([Contact.init(name: item.name, email: item.email)])
             self.dataSource.apply(currentSnapshot)
+            
+            self.contactList = nil
+            self.update(with: self.contactList, animate: false)
+//            self.tableView.reloadData()
+            
         }
         
         alert.addAction(confirmAction)
